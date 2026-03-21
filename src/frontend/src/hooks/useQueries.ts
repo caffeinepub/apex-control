@@ -1,66 +1,118 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { Question } from "../backend.d";
 import { useActor } from "./useActor";
 
-export function useGetAllCommands() {
+export function useGetProfile() {
   const { actor, isFetching } = useActor();
   return useQuery({
-    queryKey: ["commands"],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAllCommands();
-    },
-    enabled: !!actor && !isFetching,
-    refetchInterval: 5000,
-  });
-}
-
-export function useAddCommand() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (command: string) => {
-      if (!actor) throw new Error("No actor");
-      return actor.addCommand(command);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["commands"] }),
-  });
-}
-
-export function useGetControlState() {
-  const { actor, isFetching } = useActor();
-  return useQuery({
-    queryKey: ["controlState"],
+    queryKey: ["profile"],
     queryFn: async () => {
       if (!actor) return null;
-      return actor.getCurrentState();
+      return actor.getCallerUserProfile();
+    },
+    enabled: !!actor && !isFetching,
+    retry: 1,
+  });
+}
+
+export function useCreateProfile() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      name,
+      age,
+      pic,
+    }: { name: string; age: number; pic: string | null }) => {
+      if (!actor) throw new Error("No actor");
+      return actor.createProfile(name, BigInt(age), pic);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["profile"] }),
+  });
+}
+
+export function useGetCreditPoints() {
+  const { actor, isFetching } = useActor();
+  return useQuery({
+    queryKey: ["credits"],
+    queryFn: async () => {
+      if (!actor) return 0n;
+      return actor.getCreditPoints();
     },
     enabled: !!actor && !isFetching,
   });
 }
 
-export function useUpdateControlState() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (state: {
-      brightness: number;
-      volume: number;
-      wifiOn: boolean;
-      dndOn: boolean;
-    }) => {
-      if (!actor) throw new Error("No actor");
-      return actor.updateControlState(
-        state.brightness,
-        state.volume,
-        state.wifiOn,
-        state.dndOn,
-      );
+export function useGetAllTasks() {
+  const { actor, isFetching } = useActor();
+  return useQuery({
+    queryKey: ["tasks"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllTasks();
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["controlState"] }),
+    enabled: !!actor && !isFetching,
   });
 }
 
-export function useGetReviews() {
+export function useCreateTask() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: {
+      title: string;
+      description: string;
+      taskType: string;
+      pointsReward: number;
+      difficulty: number;
+      questions: Question[];
+    }) => {
+      if (!actor) throw new Error("No actor");
+      return actor.createTask(
+        args.title,
+        args.description,
+        args.taskType,
+        BigInt(args.pointsReward),
+        BigInt(args.difficulty),
+        args.questions,
+      );
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
+  });
+}
+
+export function useSubmitTaskAnswers() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      taskId,
+      answers,
+    }: { taskId: bigint; answers: bigint[] }) => {
+      if (!actor) throw new Error("No actor");
+      return actor.submitTaskAnswers(taskId, answers);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["credits"] });
+      qc.invalidateQueries({ queryKey: ["profile"] });
+      qc.invalidateQueries({ queryKey: ["leaderboard"] });
+    },
+  });
+}
+
+export function useGetLeaderboard() {
+  const { actor, isFetching } = useActor();
+  return useQuery({
+    queryKey: ["leaderboard"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getLeaderboard();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useGetAllReviews() {
   const { actor, isFetching } = useActor();
   return useQuery({
     queryKey: ["reviews"],
@@ -76,20 +128,91 @@ export function useAddReview() {
   const { actor } = useActor();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (review: {
-      name: string;
-      location: string;
-      rating: number;
-      reviewText: string;
-    }) => {
+    mutationFn: async ({
+      username,
+      rating,
+      comment,
+    }: { username: string; rating: number; comment: string }) => {
       if (!actor) throw new Error("No actor");
-      return actor.addReview(
-        review.name,
-        review.location,
-        review.rating,
-        review.reviewText,
-      );
+      return actor.addReview(username, BigInt(rating), comment);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["reviews"] }),
+  });
+}
+
+export function useGetRewardsStore() {
+  const { actor, isFetching } = useActor();
+  return useQuery({
+    queryKey: ["rewards"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getRewardsStore();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useCreateReward() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: {
+      name: string;
+      description: string;
+      cost: number;
+      rewardType: string;
+      value: number | null;
+    }) => {
+      if (!actor) throw new Error("No actor");
+      return actor.createReward(
+        args.name,
+        args.description,
+        BigInt(args.cost),
+        args.rewardType,
+        args.value != null ? BigInt(args.value) : null,
+      );
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["rewards"] }),
+  });
+}
+
+export function useRedeemReward() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (rewardId: bigint) => {
+      if (!actor) throw new Error("No actor");
+      return actor.redeemReward(rewardId);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["credits"] });
+      qc.invalidateQueries({ queryKey: ["rewards"] });
+      qc.invalidateQueries({ queryKey: ["profile"] });
+    },
+  });
+}
+
+export function useRedeemSubscription() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (rewardId: bigint) => {
+      if (!actor) throw new Error("No actor");
+      return actor.redeemSubscription(rewardId);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["credits"] });
+      qc.invalidateQueries({ queryKey: ["profile"] });
+    },
+  });
+}
+
+export function useLogAiSession() {
+  const { actor } = useActor();
+  return useMutation({
+    mutationFn: async (notes: string) => {
+      if (!actor) throw new Error("No actor");
+      return actor.logAiTherapySession(notes);
+    },
   });
 }

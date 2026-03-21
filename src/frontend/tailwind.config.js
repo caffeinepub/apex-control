@@ -16,8 +16,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Sora', 'sans-serif'],
-        display: ['Cabinet Grotesk', 'sans-serif'],
+        sans: ['Poppins', 'Nunito', 'sans-serif'],
+        display: ['Nunito', 'Poppins', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
       colors: {
@@ -54,6 +54,18 @@ export default {
           DEFAULT: "oklch(var(--card))",
           foreground: "oklch(var(--card-foreground))",
         },
+        teal: {
+          deep: "#0F7F7B",
+          mid: "#1AA8A3",
+          light: "#CFF5F2",
+        },
+        kidbiz: {
+          orange: "#F47C2F",
+          yellow: "#F3C14B",
+          green: "#35B86B",
+          teal: "#0F7F7B",
+          mint: "#CFF5F2",
+        },
         chart: {
           1: "oklch(var(--chart-1))",
           2: "oklch(var(--chart-2))",
@@ -74,11 +86,14 @@ export default {
       },
       borderRadius: {
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "calc(var(--radius) - 4px)",
+        sm: "calc(var(--radius) - 8px)",
+        xl: "calc(var(--radius) + 4px)",
+        "2xl": "calc(var(--radius) + 8px)",
       },
       boxShadow: {
-        xs: "0 1px 2px 0 rgba(0,0,0,0.05)",
+        card: "0 4px 24px 0 rgba(15,127,123,0.10)",
+        float: "0 8px 32px 0 rgba(15,127,123,0.18)",
       },
       keyframes: {
         "accordion-down": {

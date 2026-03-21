@@ -16,21 +16,125 @@ export interface ControlState {
   'brightness' : number,
   'dndOn' : boolean,
 }
+export interface Question {
+  'questionText' : string,
+  'correctAnswerIndex' : bigint,
+  'options' : Array<string>,
+  'points' : bigint,
+}
+export interface QuestionResult {
+  'id' : bigint,
+  'userAnswerIndex' : bigint,
+  'isCorrect' : boolean,
+  'questionText' : string,
+  'correctAnswerIndex' : bigint,
+  'options' : Array<string>,
+  'points' : bigint,
+}
 export interface Review {
-  'name' : string,
-  'reviewText' : string,
+  'id' : bigint,
+  'username' : string,
+  'comment' : string,
   'timestamp' : Time,
-  'rating' : number,
-  'location' : string,
+  'rating' : bigint,
+}
+export interface Reward {
+  'id' : bigint,
+  'value' : [] | [bigint],
+  'cost' : bigint,
+  'name' : string,
+  'createdAt' : Time,
+  'description' : string,
+  'rewardType' : string,
+}
+export type SubscriptionStatus = { 'active' : { 'expiryDateNanos' : Time } } |
+  { 'inactive' : null };
+export interface Task {
+  'id' : bigint,
+  'title' : string,
+  'difficulty' : bigint,
+  'createdAt' : Time,
+  'description' : string,
+  'taskType' : string,
+  'questions' : Array<Question>,
+  'pointsReward' : bigint,
 }
 export type Time = bigint;
+export interface UserProfile {
+  'age' : bigint,
+  'name' : string,
+  'streakDays' : bigint,
+  'subscriptionStatus' : SubscriptionStatus,
+  'totalCreditPoints' : bigint,
+  'registrationDate' : Time,
+  'profilePicture' : [] | [string],
+}
+export type UserRole = { 'admin' : null } |
+  { 'user' : null } |
+  { 'guest' : null };
 export interface VoiceCommand { 'command' : string, 'timestamp' : Time }
 export interface _SERVICE {
+  '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'addCommand' : ActorMethod<[string], undefined>,
-  'addReview' : ActorMethod<[string, string, number, string], undefined>,
+  'addReview' : ActorMethod<[string, bigint, string], undefined>,
+  'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'calculateTotalPoints' : ActorMethod<[Principal], bigint>,
+  'createProfile' : ActorMethod<
+    [string, bigint, [] | [string]],
+    { 'streakDays' : bigint, 'totalCreditPoints' : bigint }
+  >,
+  'createReward' : ActorMethod<
+    [string, string, bigint, string, [] | [bigint]],
+    Reward
+  >,
+  'createTask' : ActorMethod<
+    [string, string, string, bigint, bigint, Array<Question>],
+    Task
+  >,
   'getAllCommands' : ActorMethod<[], Array<VoiceCommand>>,
   'getAllReviews' : ActorMethod<[], Array<Review>>,
+  'getAllTasks' : ActorMethod<[], Array<Task>>,
+  'getAllVoiceCommands' : ActorMethod<[], Array<VoiceCommand>>,
+  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
+  'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getCreditPoints' : ActorMethod<[], bigint>,
+  'getCurrentControlState' : ActorMethod<[], [] | [ControlState]>,
   'getCurrentState' : ActorMethod<[], [] | [ControlState]>,
+  'getLeaderboard' : ActorMethod<[], Array<UserProfile>>,
+  'getProfile' : ActorMethod<
+    [Principal],
+    [] | [
+      {
+        'age' : bigint,
+        'name' : string,
+        'streakDays' : bigint,
+        'subscriptionStatus' : SubscriptionStatus,
+        'totalCreditPoints' : bigint,
+        'profilePicture' : [] | [string],
+      }
+    ]
+  >,
+  'getRewardsStore' : ActorMethod<[], Array<Reward>>,
+  'getTopRatedReviews' : ActorMethod<[], Array<Review>>,
+  'getTopWinners' : ActorMethod<[], Array<UserProfile>>,
+  'getTxAmount' : ActorMethod<[Principal], bigint>,
+  'isCallerAdmin' : ActorMethod<[], boolean>,
+  'isUserSubscribed' : ActorMethod<[Principal], boolean>,
+  'logAiTherapySession' : ActorMethod<[string], bigint>,
+  'redeemPoints' : ActorMethod<[bigint, bigint], boolean>,
+  'redeemReward' : ActorMethod<[bigint], boolean>,
+  'redeemSubscription' : ActorMethod<[bigint], boolean>,
+  'submitTaskAnswers' : ActorMethod<
+    [bigint, Array<bigint>],
+    {
+      'allCorrect' : boolean,
+      'questionResults' : Array<QuestionResult>,
+      'taskType' : string,
+      'isTaskCompleted' : boolean,
+      'totalPointsForUser' : bigint,
+      'updatedCreditPoints' : bigint,
+    }
+  >,
   'updateControlState' : ActorMethod<
     [number, number, boolean, boolean],
     undefined

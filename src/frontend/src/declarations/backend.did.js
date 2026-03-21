@@ -8,17 +8,60 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
+export const UserRole = IDL.Variant({
+  'admin' : IDL.Null,
+  'user' : IDL.Null,
+  'guest' : IDL.Null,
+});
 export const Time = IDL.Int;
+export const Reward = IDL.Record({
+  'id' : IDL.Nat,
+  'value' : IDL.Opt(IDL.Nat),
+  'cost' : IDL.Nat,
+  'name' : IDL.Text,
+  'createdAt' : Time,
+  'description' : IDL.Text,
+  'rewardType' : IDL.Text,
+});
+export const Question = IDL.Record({
+  'questionText' : IDL.Text,
+  'correctAnswerIndex' : IDL.Nat,
+  'options' : IDL.Vec(IDL.Text),
+  'points' : IDL.Nat,
+});
+export const Task = IDL.Record({
+  'id' : IDL.Nat,
+  'title' : IDL.Text,
+  'difficulty' : IDL.Nat,
+  'createdAt' : Time,
+  'description' : IDL.Text,
+  'taskType' : IDL.Text,
+  'questions' : IDL.Vec(Question),
+  'pointsReward' : IDL.Nat,
+});
 export const VoiceCommand = IDL.Record({
   'command' : IDL.Text,
   'timestamp' : Time,
 });
 export const Review = IDL.Record({
-  'name' : IDL.Text,
-  'reviewText' : IDL.Text,
+  'id' : IDL.Nat,
+  'username' : IDL.Text,
+  'comment' : IDL.Text,
   'timestamp' : Time,
-  'rating' : IDL.Nat8,
-  'location' : IDL.Text,
+  'rating' : IDL.Nat,
+});
+export const SubscriptionStatus = IDL.Variant({
+  'active' : IDL.Record({ 'expiryDateNanos' : Time }),
+  'inactive' : IDL.Null,
+});
+export const UserProfile = IDL.Record({
+  'age' : IDL.Nat,
+  'name' : IDL.Text,
+  'streakDays' : IDL.Nat,
+  'subscriptionStatus' : SubscriptionStatus,
+  'totalCreditPoints' : IDL.Nat,
+  'registrationDate' : Time,
+  'profilePicture' : IDL.Opt(IDL.Text),
 });
 export const ControlState = IDL.Record({
   'wifiOn' : IDL.Bool,
@@ -26,13 +69,87 @@ export const ControlState = IDL.Record({
   'brightness' : IDL.Nat8,
   'dndOn' : IDL.Bool,
 });
+export const QuestionResult = IDL.Record({
+  'id' : IDL.Nat,
+  'userAnswerIndex' : IDL.Nat,
+  'isCorrect' : IDL.Bool,
+  'questionText' : IDL.Text,
+  'correctAnswerIndex' : IDL.Nat,
+  'options' : IDL.Vec(IDL.Text),
+  'points' : IDL.Nat,
+});
 
 export const idlService = IDL.Service({
+  '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'addCommand' : IDL.Func([IDL.Text], [], []),
-  'addReview' : IDL.Func([IDL.Text, IDL.Text, IDL.Nat8, IDL.Text], [], []),
+  'addReview' : IDL.Func([IDL.Text, IDL.Nat, IDL.Text], [], []),
+  'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'calculateTotalPoints' : IDL.Func([IDL.Principal], [IDL.Nat], ['query']),
+  'createProfile' : IDL.Func(
+      [IDL.Text, IDL.Nat, IDL.Opt(IDL.Text)],
+      [IDL.Record({ 'streakDays' : IDL.Nat, 'totalCreditPoints' : IDL.Nat })],
+      [],
+    ),
+  'createReward' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Nat, IDL.Text, IDL.Opt(IDL.Nat)],
+      [Reward],
+      [],
+    ),
+  'createTask' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat, IDL.Vec(Question)],
+      [Task],
+      [],
+    ),
   'getAllCommands' : IDL.Func([], [IDL.Vec(VoiceCommand)], ['query']),
   'getAllReviews' : IDL.Func([], [IDL.Vec(Review)], ['query']),
+  'getAllTasks' : IDL.Func([], [IDL.Vec(Task)], ['query']),
+  'getAllVoiceCommands' : IDL.Func([], [IDL.Vec(VoiceCommand)], ['query']),
+  'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
+  'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getCreditPoints' : IDL.Func([], [IDL.Nat], ['query']),
+  'getCurrentControlState' : IDL.Func([], [IDL.Opt(ControlState)], ['query']),
   'getCurrentState' : IDL.Func([], [IDL.Opt(ControlState)], ['query']),
+  'getLeaderboard' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
+  'getProfile' : IDL.Func(
+      [IDL.Principal],
+      [
+        IDL.Opt(
+          IDL.Record({
+            'age' : IDL.Nat,
+            'name' : IDL.Text,
+            'streakDays' : IDL.Nat,
+            'subscriptionStatus' : SubscriptionStatus,
+            'totalCreditPoints' : IDL.Nat,
+            'profilePicture' : IDL.Opt(IDL.Text),
+          })
+        ),
+      ],
+      ['query'],
+    ),
+  'getRewardsStore' : IDL.Func([], [IDL.Vec(Reward)], ['query']),
+  'getTopRatedReviews' : IDL.Func([], [IDL.Vec(Review)], ['query']),
+  'getTopWinners' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
+  'getTxAmount' : IDL.Func([IDL.Principal], [IDL.Int], ['query']),
+  'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'isUserSubscribed' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
+  'logAiTherapySession' : IDL.Func([IDL.Text], [IDL.Nat], []),
+  'redeemPoints' : IDL.Func([IDL.Nat, IDL.Nat], [IDL.Bool], []),
+  'redeemReward' : IDL.Func([IDL.Nat], [IDL.Bool], []),
+  'redeemSubscription' : IDL.Func([IDL.Nat], [IDL.Bool], []),
+  'submitTaskAnswers' : IDL.Func(
+      [IDL.Nat, IDL.Vec(IDL.Nat)],
+      [
+        IDL.Record({
+          'allCorrect' : IDL.Bool,
+          'questionResults' : IDL.Vec(QuestionResult),
+          'taskType' : IDL.Text,
+          'isTaskCompleted' : IDL.Bool,
+          'totalPointsForUser' : IDL.Nat,
+          'updatedCreditPoints' : IDL.Nat,
+        }),
+      ],
+      [],
+    ),
   'updateControlState' : IDL.Func(
       [IDL.Nat8, IDL.Nat8, IDL.Bool, IDL.Bool],
       [],
@@ -43,14 +160,57 @@ export const idlService = IDL.Service({
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
+  const UserRole = IDL.Variant({
+    'admin' : IDL.Null,
+    'user' : IDL.Null,
+    'guest' : IDL.Null,
+  });
   const Time = IDL.Int;
+  const Reward = IDL.Record({
+    'id' : IDL.Nat,
+    'value' : IDL.Opt(IDL.Nat),
+    'cost' : IDL.Nat,
+    'name' : IDL.Text,
+    'createdAt' : Time,
+    'description' : IDL.Text,
+    'rewardType' : IDL.Text,
+  });
+  const Question = IDL.Record({
+    'questionText' : IDL.Text,
+    'correctAnswerIndex' : IDL.Nat,
+    'options' : IDL.Vec(IDL.Text),
+    'points' : IDL.Nat,
+  });
+  const Task = IDL.Record({
+    'id' : IDL.Nat,
+    'title' : IDL.Text,
+    'difficulty' : IDL.Nat,
+    'createdAt' : Time,
+    'description' : IDL.Text,
+    'taskType' : IDL.Text,
+    'questions' : IDL.Vec(Question),
+    'pointsReward' : IDL.Nat,
+  });
   const VoiceCommand = IDL.Record({ 'command' : IDL.Text, 'timestamp' : Time });
   const Review = IDL.Record({
-    'name' : IDL.Text,
-    'reviewText' : IDL.Text,
+    'id' : IDL.Nat,
+    'username' : IDL.Text,
+    'comment' : IDL.Text,
     'timestamp' : Time,
-    'rating' : IDL.Nat8,
-    'location' : IDL.Text,
+    'rating' : IDL.Nat,
+  });
+  const SubscriptionStatus = IDL.Variant({
+    'active' : IDL.Record({ 'expiryDateNanos' : Time }),
+    'inactive' : IDL.Null,
+  });
+  const UserProfile = IDL.Record({
+    'age' : IDL.Nat,
+    'name' : IDL.Text,
+    'streakDays' : IDL.Nat,
+    'subscriptionStatus' : SubscriptionStatus,
+    'totalCreditPoints' : IDL.Nat,
+    'registrationDate' : Time,
+    'profilePicture' : IDL.Opt(IDL.Text),
   });
   const ControlState = IDL.Record({
     'wifiOn' : IDL.Bool,
@@ -58,13 +218,87 @@ export const idlFactory = ({ IDL }) => {
     'brightness' : IDL.Nat8,
     'dndOn' : IDL.Bool,
   });
+  const QuestionResult = IDL.Record({
+    'id' : IDL.Nat,
+    'userAnswerIndex' : IDL.Nat,
+    'isCorrect' : IDL.Bool,
+    'questionText' : IDL.Text,
+    'correctAnswerIndex' : IDL.Nat,
+    'options' : IDL.Vec(IDL.Text),
+    'points' : IDL.Nat,
+  });
   
   return IDL.Service({
+    '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'addCommand' : IDL.Func([IDL.Text], [], []),
-    'addReview' : IDL.Func([IDL.Text, IDL.Text, IDL.Nat8, IDL.Text], [], []),
+    'addReview' : IDL.Func([IDL.Text, IDL.Nat, IDL.Text], [], []),
+    'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'calculateTotalPoints' : IDL.Func([IDL.Principal], [IDL.Nat], ['query']),
+    'createProfile' : IDL.Func(
+        [IDL.Text, IDL.Nat, IDL.Opt(IDL.Text)],
+        [IDL.Record({ 'streakDays' : IDL.Nat, 'totalCreditPoints' : IDL.Nat })],
+        [],
+      ),
+    'createReward' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Nat, IDL.Text, IDL.Opt(IDL.Nat)],
+        [Reward],
+        [],
+      ),
+    'createTask' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Nat, IDL.Vec(Question)],
+        [Task],
+        [],
+      ),
     'getAllCommands' : IDL.Func([], [IDL.Vec(VoiceCommand)], ['query']),
     'getAllReviews' : IDL.Func([], [IDL.Vec(Review)], ['query']),
+    'getAllTasks' : IDL.Func([], [IDL.Vec(Task)], ['query']),
+    'getAllVoiceCommands' : IDL.Func([], [IDL.Vec(VoiceCommand)], ['query']),
+    'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
+    'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getCreditPoints' : IDL.Func([], [IDL.Nat], ['query']),
+    'getCurrentControlState' : IDL.Func([], [IDL.Opt(ControlState)], ['query']),
     'getCurrentState' : IDL.Func([], [IDL.Opt(ControlState)], ['query']),
+    'getLeaderboard' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
+    'getProfile' : IDL.Func(
+        [IDL.Principal],
+        [
+          IDL.Opt(
+            IDL.Record({
+              'age' : IDL.Nat,
+              'name' : IDL.Text,
+              'streakDays' : IDL.Nat,
+              'subscriptionStatus' : SubscriptionStatus,
+              'totalCreditPoints' : IDL.Nat,
+              'profilePicture' : IDL.Opt(IDL.Text),
+            })
+          ),
+        ],
+        ['query'],
+      ),
+    'getRewardsStore' : IDL.Func([], [IDL.Vec(Reward)], ['query']),
+    'getTopRatedReviews' : IDL.Func([], [IDL.Vec(Review)], ['query']),
+    'getTopWinners' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
+    'getTxAmount' : IDL.Func([IDL.Principal], [IDL.Int], ['query']),
+    'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'isUserSubscribed' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
+    'logAiTherapySession' : IDL.Func([IDL.Text], [IDL.Nat], []),
+    'redeemPoints' : IDL.Func([IDL.Nat, IDL.Nat], [IDL.Bool], []),
+    'redeemReward' : IDL.Func([IDL.Nat], [IDL.Bool], []),
+    'redeemSubscription' : IDL.Func([IDL.Nat], [IDL.Bool], []),
+    'submitTaskAnswers' : IDL.Func(
+        [IDL.Nat, IDL.Vec(IDL.Nat)],
+        [
+          IDL.Record({
+            'allCorrect' : IDL.Bool,
+            'questionResults' : IDL.Vec(QuestionResult),
+            'taskType' : IDL.Text,
+            'isTaskCompleted' : IDL.Bool,
+            'totalPointsForUser' : IDL.Nat,
+            'updatedCreditPoints' : IDL.Nat,
+          }),
+        ],
+        [],
+      ),
     'updateControlState' : IDL.Func(
         [IDL.Nat8, IDL.Nat8, IDL.Bool, IDL.Bool],
         [],
