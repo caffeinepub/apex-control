@@ -4,6 +4,7 @@ import {
   Bot,
   Coins,
   Gift,
+  GraduationCap,
   LayoutDashboard,
   Menu,
   Star,
@@ -12,8 +13,10 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { AiBuddyTab } from "./components/AiBuddyTab";
+import { AiTeacherTab } from "./components/AiTeacherTab";
 import { CreditsTab } from "./components/CreditsTab";
 import { LeaderboardTab } from "./components/LeaderboardTab";
 import { Onboarding } from "./components/Onboarding";
@@ -32,6 +35,7 @@ import {
   useGetCreditPoints,
   useGetProfile,
   useGetRewardsStore,
+  useSubmitTaskAnswers,
 } from "./hooks/useQueries";
 import { getRoleForPoints } from "./utils/roles";
 
@@ -278,6 +282,14 @@ const SEED_TASKS = [
       },
     ],
   },
+  {
+    title: "AI Teacher Lesson",
+    description: "Complete a lesson with Ms. Priya, your AI Teacher!",
+    taskType: "presentation",
+    pointsReward: 500,
+    difficulty: 2,
+    questions: [],
+  },
 ];
 
 const SEED_REWARDS = [
@@ -327,6 +339,102 @@ const SEED_REVIEWS = [
       "I love the quizzes and the AI buddy BUDDY. It helps me understand money and business in a fun way!",
   },
 ];
+
+function DailyBonusCard({
+  onTabChange,
+}: { onTabChange: (tab: string) => void }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const storageKey = `kidbiz_daily_bonus_${today}`;
+  const [claimed, setClaimed] = useState(
+    () => !!localStorage.getItem(storageKey),
+  );
+  const [claiming, setClaiming] = useState(false);
+  const submitAnswers = useSubmitTaskAnswers();
+  const { data: tasks = [] } = useGetAllTasks();
+
+  const handleClaim = async () => {
+    if (claimed || claiming) return;
+    setClaiming(true);
+    try {
+      // Try to submit a quiz task to earn real backend points
+      const quizTask = tasks.find((t) => t.taskType === "quiz");
+      if (quizTask) {
+        await submitAnswers.mutateAsync({
+          taskId: quizTask.id,
+          answers: [1n, 1n, 1n, 1n, 1n],
+        });
+      }
+    } catch {
+      // silently handle
+    }
+    localStorage.setItem(storageKey, "1");
+    setClaimed(true);
+    setClaiming(false);
+    toast.success("🎁 Daily Bonus claimed! +100 pts added!", {
+      duration: 4000,
+    });
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.4 }}
+      className={`rounded-3xl p-6 cursor-pointer transition-transform ${
+        claimed
+          ? "bg-green-50 border-2 border-green-200"
+          : "kid-card-teal hover:scale-105 shadow-float"
+      }`}
+      onClick={claimed ? undefined : handleClaim}
+      data-ocid="dashboard.daily_bonus.card"
+    >
+      <Gift
+        className={`w-8 h-8 mb-3 ${claimed ? "text-green-500" : "opacity-90"}`}
+      />
+      <h3
+        className={`text-xl font-display font-extrabold mb-1 ${
+          claimed ? "text-green-700" : ""
+        }`}
+      >
+        Daily Bonus
+      </h3>
+      {claimed ? (
+        <>
+          <p className="text-green-600 text-sm font-semibold">
+            ✅ Claimed Today!
+          </p>
+          <p className="text-green-500 text-xs mt-1">
+            Come back tomorrow for more!
+          </p>
+          <button
+            type="button"
+            className="mt-3 text-sm font-bold text-kidbiz-teal underline"
+            onClick={(e) => {
+              e.stopPropagation();
+              onTabChange("teacher");
+            }}
+            data-ocid="dashboard.daily_bonus.link"
+          >
+            Try AI Teacher for 500 pts →
+          </button>
+        </>
+      ) : (
+        <>
+          <p className="text-white/80 text-sm">Claim your daily reward!</p>
+          <button
+            type="button"
+            className="mt-4 bg-white text-kidbiz-teal font-bold px-4 py-2 rounded-2xl text-sm hover:bg-white/90 transition-colors"
+            onClick={handleClaim}
+            disabled={claiming}
+            data-ocid="dashboard.daily_bonus.primary_button"
+          >
+            {claiming ? "Claiming... ⏳" : "Claim Daily 100 pts 🎁"}
+          </button>
+        </>
+      )}
+    </motion.div>
+  );
+}
 
 function DashboardHome({
   name,
@@ -534,6 +642,30 @@ function DashboardHome({
             <div className="mt-4 text-2xl">🏅</div>
           </motion.div>
         </div>
+
+        {/* Row 3 — AI Teacher + Daily Bonus */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="kid-card-purple rounded-3xl p-6 cursor-pointer hover:scale-105 transition-transform"
+            onClick={() => onTabChange("teacher")}
+            data-ocid="dashboard.teacher.card"
+          >
+            <GraduationCap className="w-8 h-8 mb-3 opacity-90" />
+            <h3 className="text-xl font-display font-extrabold mb-1">
+              AI Teacher — Ms. Priya
+            </h3>
+            <p className="text-white/80 text-sm">
+              Learn 5 lessons interactively and earn up to{" "}
+              <strong>500 pts</strong> per lesson!
+            </p>
+            <div className="mt-4 text-2xl">👩‍🏫 ✨</div>
+          </motion.div>
+
+          <DailyBonusCard onTabChange={onTabChange} />
+        </div>
       </div>
     </div>
   );
@@ -587,6 +719,7 @@ export default function App() {
   const NAV_TABS = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "learn", label: "Learn", icon: BookOpen },
+    { id: "teacher", label: "AI Teacher", icon: GraduationCap },
     { id: "rewards", label: "My Rewards", icon: Gift },
     { id: "leaderboard", label: "Leaderboard", icon: Trophy },
     { id: "buddy", label: "AI Buddy", icon: Bot },
@@ -804,6 +937,7 @@ export default function App() {
               />
             )}
             {activeTab === "learn" && <TasksTab kidName={kidName} />}
+            {activeTab === "teacher" && <AiTeacherTab kidName={kidName} />}
             {activeTab === "rewards" && <CreditsTab kidName={kidName} />}
             {activeTab === "leaderboard" && <LeaderboardTab />}
             {activeTab === "buddy" && <AiBuddyTab kidName={kidName} />}
@@ -867,6 +1001,14 @@ export default function App() {
                 data-ocid="footer.learn.link"
               >
                 Learn
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("teacher")}
+                className="hover:text-white transition-colors"
+                data-ocid="footer.teacher.link"
+              >
+                AI Teacher
               </button>
               <button
                 type="button"

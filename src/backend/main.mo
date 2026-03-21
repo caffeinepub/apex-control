@@ -526,7 +526,10 @@ actor {
   };
 
   public query ({ caller }) func getCreditPoints() : async Nat {
-    0;
+    switch (userProfiles.get(caller)) {
+      case (?profile) { profile.totalCreditPoints };
+      case null { 0 };
+    };
   };
 
   // Command and Control Queries for All Users
