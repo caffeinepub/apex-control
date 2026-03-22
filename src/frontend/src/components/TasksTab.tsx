@@ -10,10 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Brain, ChevronRight, Loader2, RefreshCw, Star } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Task } from "../backend.d";
 import {
+  useEarnCredits,
   useGetAllTasks,
   useLogAiSession,
   useSubmitTaskAnswers,
@@ -1652,6 +1653,34 @@ function ShareWorkModal({ open, onContinue }: ShareWorkModalProps) {
     }
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
+  useEffect(() => {
+    if (open && mode === "camera" && !capturedPhoto) {
+      navigator.mediaDevices
+        .getUserMedia({ video: { facingMode: "environment" }, audio: false })
+        .then((mediaStream) => {
+          setStream(mediaStream);
+          if (videoRef.current) {
+            videoRef.current.srcObject = mediaStream;
+            videoRef.current.play().catch(() => {});
+          }
+        })
+        .catch(() =>
+          setCameraError(
+            "Could not access camera. Please allow camera permission or use the link option.",
+          ),
+        );
+    }
+    if (!open) {
+      setStream((s) => {
+        if (s) {
+          for (const t of s.getTracks()) t.stop();
+        }
+        return null;
+      });
+    }
+  }, [open]);
+
   return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent
@@ -2334,6 +2363,7 @@ interface TasksTabProps {
 
 export function TasksTab({ kidName }: TasksTabProps) {
   const { data: backendTasks = [], isLoading } = useGetAllTasks();
+  const earnCredits = useEarnCredits();
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   // active task state
@@ -2380,6 +2410,7 @@ export function TasksTab({ kidName }: TasksTabProps) {
   };
 
   const handleLocalComplete = (task: BankTask, points: number) => {
+    earnCredits.mutate(points);
     setMeetingPoints(points);
     setMeetingTitle(task.title);
     setActiveLocal(null);
@@ -2396,6 +2427,7 @@ export function TasksTab({ kidName }: TasksTabProps) {
     setShowShareWork(false);
     if (pendingPowerPointComplete) {
       setPendingPowerPointComplete(false);
+      earnCredits.mutate(500);
       setActiveLocal(null);
       setMeetingPoints(500);
       setMeetingTitle(POWERPOINT_TASK.title);

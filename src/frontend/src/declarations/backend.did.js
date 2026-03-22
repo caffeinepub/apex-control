@@ -285,6 +285,7 @@ export const idlFactory = ({ IDL }) => {
     'redeemPoints' : IDL.Func([IDL.Nat, IDL.Nat], [IDL.Bool], []),
     'redeemReward' : IDL.Func([IDL.Nat], [IDL.Bool], []),
     'redeemSubscription' : IDL.Func([IDL.Nat], [IDL.Bool], []),
+    'earnCredits' : IDL.Func([IDL.Nat], [IDL.Nat], []),
     'submitTaskAnswers' : IDL.Func(
         [IDL.Nat, IDL.Vec(IDL.Nat)],
         [

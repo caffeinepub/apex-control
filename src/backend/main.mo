@@ -401,6 +401,21 @@ actor {
     };
   };
 
+  // Earn credits for completing local (non-backend) tasks
+  public shared ({ caller }) func earnCredits(points : Nat) : async Nat {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can earn credits");
+    };
+    switch (userProfiles.get(caller)) {
+      case (?profile) {
+        let updated = { profile with totalCreditPoints = profile.totalCreditPoints + points };
+        userProfiles.add(caller, updated);
+        updated.totalCreditPoints;
+      };
+      case (null) { Runtime.trap("User not found") };
+    };
+  };
+
   // Get leaderboard - public (no auth required)
   public query ({ caller }) func getLeaderboard() : async [UserProfile] {
     userProfiles.values().toArray().sort(compareUsersByCreditPoints);

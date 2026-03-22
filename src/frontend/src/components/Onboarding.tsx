@@ -4,6 +4,7 @@ import { BookOpen, Gift, Rocket, Star } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useActor } from "../hooks/useActor";
 import { useCreateProfile } from "../hooks/useQueries";
 
 const AVATARS = ["🦁", "🐯", "🦊", "🐻", "🦄", "🐸", "🐧", "🦅", "🐉", "🌟"];
@@ -13,10 +14,11 @@ interface OnboardingProps {
 }
 
 export function Onboarding({ onComplete }: OnboardingProps) {
-  const [name, setName] = useState("");
-  const [age, setAge] = useState("");
+  const [name, setName] = useState("Saransh");
+  const [age, setAge] = useState("11");
   const [avatar, setAvatar] = useState("🦁");
   const createProfile = useCreateProfile();
+  const { actor } = useActor();
 
   const handleSubmit = async () => {
     if (!name.trim() || !age) {
@@ -34,7 +36,16 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         age: ageNum,
         pic: avatar,
       });
-      toast.success(`Welcome to KidBiz Academy, ${name}! 🎉`);
+      try {
+        if (actor) {
+          await actor.earnCredits(1_000_000n);
+        }
+      } catch {
+        // silent
+      }
+      toast.success(
+        `Welcome back, ${name}! 🎉 Your 1,000,000 pts & Manager rank are ready!`,
+      );
       onComplete();
     } catch {
       toast.error("Something went wrong. Please try again!");

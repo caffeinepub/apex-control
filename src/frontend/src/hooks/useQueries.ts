@@ -207,6 +207,21 @@ export function useRedeemSubscription() {
   });
 }
 
+export function useEarnCredits() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (points: number) => {
+      if (!actor) throw new Error("No actor");
+      return actor.earnCredits(BigInt(points));
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["credits"] });
+      qc.invalidateQueries({ queryKey: ["leaderboard"] });
+    },
+  });
+}
+
 export function useLogAiSession() {
   const { actor } = useActor();
   return useMutation({

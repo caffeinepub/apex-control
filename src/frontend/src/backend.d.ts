@@ -121,6 +121,7 @@ export interface backendInterface {
     redeemPoints(rewardId: bigint, cost: bigint): Promise<boolean>;
     redeemReward(rewardId: bigint): Promise<boolean>;
     redeemSubscription(rewardId: bigint): Promise<boolean>;
+    earnCredits(points: bigint): Promise<bigint>;
     submitTaskAnswers(taskId: bigint, answers: Array<bigint>): Promise<{
         allCorrect: boolean;
         questionResults: Array<QuestionResult>;

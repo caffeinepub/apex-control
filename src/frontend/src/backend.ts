@@ -204,6 +204,7 @@ export interface backendInterface {
     redeemPoints(rewardId: bigint, cost: bigint): Promise<boolean>;
     redeemReward(rewardId: bigint): Promise<boolean>;
     redeemSubscription(rewardId: bigint): Promise<boolean>;
+    earnCredits(points: bigint): Promise<bigint>;
     submitTaskAnswers(taskId: bigint, answers: Array<bigint>): Promise<{
         allCorrect: boolean;
         questionResults: Array<QuestionResult>;
@@ -631,6 +632,15 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.redeemSubscription(arg0);
             return result;
+        }
+    }
+    async earnCredits(arg0: bigint): Promise<bigint> {
+        try {
+            const result = await this.actor.earnCredits(arg0);
+            return result;
+        } catch (e) {
+            if (this.processError) this.processError(e);
+            throw e;
         }
     }
     async submitTaskAnswers(arg0: bigint, arg1: Array<bigint>): Promise<{

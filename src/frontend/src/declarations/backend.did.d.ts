@@ -124,6 +124,7 @@ export interface _SERVICE {
   'redeemPoints' : ActorMethod<[bigint, bigint], boolean>,
   'redeemReward' : ActorMethod<[bigint], boolean>,
   'redeemSubscription' : ActorMethod<[bigint], boolean>,
+  'earnCredits' : ActorMethod<[bigint], bigint>,
   'submitTaskAnswers' : ActorMethod<
     [bigint, Array<bigint>],
     {
